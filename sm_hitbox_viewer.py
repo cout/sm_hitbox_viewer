@@ -64,8 +64,13 @@ class HitboxViewer(object):
     self.sock = sock
     self.window = window
 
+    self.adj_x = 0
+    self.adj_y = 0
+    self.done = False
+
   def run(self):
-    while True:
+    self.done = False
+    while not self.done:
       self.run_one()
 
   def run_one(self):
@@ -81,6 +86,9 @@ class HitboxViewer(object):
     camera_y = (mem.short(0x0afa) - 112) & 0xffff
     if camera_x >= 10000: camera_x -= 65535
     if camera_y >= 10000: camera_y -= 65535
+
+    camera_x += self.adj_x
+    camera_y += self.adj_y
 
     window.addstr("X: %d Y: %d\n" % (camera_x, camera_y))
 
@@ -106,6 +114,9 @@ class HitboxViewer(object):
       print()
 
     window.refresh()
+
+    s = self.get_input()
+    self.handle_input(s)
 
   def get_clips(self, camera_x, camera_y, room_width):
     clips = { }
@@ -133,6 +144,31 @@ class HitboxViewer(object):
       return clip_mem
     except RuntimeError: # TODO: capture specific exception that read_from raises
       return None
+
+  def get_input(self):
+    self.window.timeout(25)
+    ch = self.window.getch()
+    if ch >= 32 and ch < 128:
+      s = chr(ch)
+    else:
+      s = ch
+    return s
+
+  def handle_input(self, ch):
+    # TODO: For some reason up/down/left/right do not work...
+    if ch == 'q' or ch == 'Q':
+      self.done = True
+    elif ch == 'h' or ch == curses.KEY_LEFT:
+      self.adj_x -= 16
+    elif ch == 'l' or ch == curses.KEY_RIGHT:
+      self.adj_x += 16
+    elif ch == 'k' or ch == curses.KEY_UP:
+      self.adj_y -= 16
+    elif ch == 'j' or ch == curses.KEY_DOWN:
+      self.adj_y += 16
+    elif ch == 'r' or ch == 'R':
+      self.adj_x = 0
+      self.adj_y = 0
 
 def main():
   sock = NetworkCommandSocket()
