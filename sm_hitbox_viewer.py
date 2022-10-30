@@ -90,7 +90,11 @@ class HitboxViewer(object):
     camera_x += self.adj_x
     camera_y += self.adj_y
 
-    window.addstr("X: %d Y: %d\n" % (camera_x, camera_y))
+    x_coord_label = "X: %d" % camera_x
+    y_coord_label = "Y: %d" % camera_y
+    if self.adj_x != 0: x_coord_label += " (%+d)" % self.adj_x
+    if self.adj_y != 0: y_coord_label += " (%+d)" % self.adj_y
+    window.addstr("%s %s\n" % (x_coord_label, y_coord_label))
 
     room_width = mem.short(0x07a5)
 
