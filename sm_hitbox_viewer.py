@@ -87,15 +87,10 @@ class HitboxViewer(object):
     room_width = mem.short(0x07a5)
 
     clips = self.get_clips(camera_x, camera_y, room_width)
+    clip_mem = self.read_clip_mem(clips)
 
-    clip_addrs = clips.values()
-    clip_regions = [ (addr, 2) for addr in clip_addrs ]
-    clip_regions = consolidate_regions(clip_regions, 0x100)
-    try:
-      # TODO: don't try to read tile memory during a transition?
-      clip_mem = SparseMemory.read_from(sock, *clip_regions)
-    except:
-      return
+    if clip_mem is None: return
+
     for y in range(0, 14):
       s = ''
       for x in range(0, 16):
@@ -127,6 +122,17 @@ class HitboxViewer(object):
         clips[(x, y)] = clip
 
     return clips
+
+  def read_clip_mem(self, clips):
+    clip_addrs = clips.values()
+    clip_regions = [ (addr, 2) for addr in clip_addrs ]
+    clip_regions = consolidate_regions(clip_regions, 0x100)
+    try:
+      # TODO: don't try to read tile memory during a transition?
+      clip_mem = SparseMemory.read_from(self.sock, *clip_regions)
+      return clip_mem
+    except RuntimeError: # TODO: capture specific exception that read_from raises
+      return None
 
 def main():
   sock = NetworkCommandSocket()
