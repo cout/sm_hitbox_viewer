@@ -59,8 +59,19 @@ def consolidate_regions(regions, max_region_size):
       addrs.append(addr)
   return addrs_to_regions(addrs, max_region_size)
 
-def main_loop(sock, window):
-  while True:
+class HitboxViewer(object):
+  def __init__(self, sock, window):
+    self.sock = sock
+    self.window = window
+
+  def run(self):
+    while True:
+      self.run_one()
+
+  def run_one(self):
+    sock = self.sock
+    window = self.window
+
     mem = SparseMemory.read_from(sock, *addresses)
 
     window.clear()
@@ -97,7 +108,7 @@ def main_loop(sock, window):
       # TODO: don't try to read tile memory during a transition?
       clip_mem = SparseMemory.read_from(sock, *clip_regions)
     except:
-      continue
+      return
     for y in range(0, 14):
       s = ''
       for x in range(0, 16):
@@ -132,7 +143,8 @@ def main():
     window = curses.newwin(0, 0, 1, 2)
     window.clear()
 
-    main_loop(sock, window)
+    viewer = HitboxViewer(sock, window)
+    viewer.run()
 
   finally:
     curses.endwin()
