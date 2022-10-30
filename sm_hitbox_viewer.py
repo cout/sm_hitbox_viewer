@@ -84,8 +84,6 @@ class HitboxViewer(object):
 
     window.addstr("X: %d Y: %d\n" % (camera_x, camera_y))
 
-    # print(camera_x, camera_y)
-
     clips = { }
     room_width = mem.short(0x07a5)
     for y in range(0, 14):
@@ -100,10 +98,8 @@ class HitboxViewer(object):
         clips[(x, y)] = clip
 
     clip_addrs = clips.values()
-    # print([ '%x' % a for a in sorted(clip_addrs) ])
     clip_regions = [ (addr, 2) for addr in clip_addrs ]
     clip_regions = consolidate_regions(clip_regions, 0x100)
-    # print([ '(%x, %x)' % (r[0], r[1]) for r in clip_regions ])
     try:
       # TODO: don't try to read tile memory during a transition?
       clip_mem = SparseMemory.read_from(sock, *clip_regions)
@@ -114,12 +110,9 @@ class HitboxViewer(object):
       for x in range(0, 16):
         clip = clips[(x, y)]
         t = clip_mem.short(clip) >> 12
-        # t = MemoryRegion.read_from(sock, clip, 2).short(clip) >> 12
         if t == 0:
-          # print('.', end=' ')
           s += '. '
         else:
-          # print('%x' % t, end=' ')
           s += '%x ' % t
       window.addstr(s)
       window.clrtoeol()
@@ -127,7 +120,6 @@ class HitboxViewer(object):
       print()
 
     window.refresh()
-    # time.sleep(1)
 
 def main():
   sock = NetworkCommandSocket()
