@@ -84,18 +84,9 @@ class HitboxViewer(object):
 
     window.addstr("X: %d Y: %d\n" % (camera_x, camera_y))
 
-    clips = { }
     room_width = mem.short(0x07a5)
-    for y in range(0, 14):
-      for x in range(0, 16):
-        stack = 0
-        tile_x = x * 16 - (camera_x & 0x000f)
-        tile_y = y * 16 - (camera_x & 0x000f)
-        a = (((camera_x + x * 16) & 0xffff) >> 4) + \
-            (((((camera_y + y * 16) & 0x0fff) >> 4) * room_width) & 0xffff)
-        bts = 0x16402 + a
-        clip = 0x10002 + a * 2
-        clips[(x, y)] = clip
+
+    clips = self.get_clips(camera_x, camera_y, room_width)
 
     clip_addrs = clips.values()
     clip_regions = [ (addr, 2) for addr in clip_addrs ]
@@ -120,6 +111,22 @@ class HitboxViewer(object):
       print()
 
     window.refresh()
+
+  def get_clips(self, camera_x, camera_y, room_width):
+    clips = { }
+
+    for y in range(0, 14):
+      for x in range(0, 16):
+        stack = 0
+        tile_x = x * 16 - (camera_x & 0x000f)
+        tile_y = y * 16 - (camera_x & 0x000f)
+        a = (((camera_x + x * 16) & 0xffff) >> 4) + \
+            (((((camera_y + y * 16) & 0x0fff) >> 4) * room_width) & 0xffff)
+        bts = 0x16402 + a
+        clip = 0x10002 + a * 2
+        clips[(x, y)] = clip
+
+    return clips
 
 def main():
   sock = NetworkCommandSocket()
