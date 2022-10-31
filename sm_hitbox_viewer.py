@@ -112,7 +112,7 @@ class HitboxViewer(object):
 
     mem = SparseMemory.read_from(sock, *addresses)
 
-    window.clear()
+    window.erase()
     window.move(0, 0)
 
     camera_x = (mem.short(0x0af6) - 128) & 0xffff
@@ -146,9 +146,7 @@ class HitboxViewer(object):
         else:
           s += '%x ' % t
       window.addstr(s)
-      window.clrtoeol()
       window.addstr("\n")
-      print()
 
     window.refresh()
 
