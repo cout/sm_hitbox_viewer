@@ -40,6 +40,7 @@ import os
 import sys
 import time
 import curses
+import argparse
 
 addresses = [
     (0x0000, 0x100),
@@ -206,8 +207,24 @@ class HitboxViewer(object):
       self.adj_x = 0
       self.adj_y = 0
 
+def create_sock(client_name, client_type):
+  if client_type == 'usb2snes':
+    return WebsocketClient(client_name)
+  elif client_type == 'retroarch':
+    return NetworkCommandSocket()
+  elif client_type is None:
+    raise ValueError('No client type provided')
+  else:
+    raise ValueError('Invalid client type %s' % client_type)
+
 def main():
-  sock = NetworkCommandSocket()
+  parser = argparse.ArgumentParser(description='SM Room Timer')
+  client_type_group = parser.add_mutually_exclusive_group(required=True)
+  client_type_group.add_argument('--usb2snes', dest='client_type', action='store_const', const='usb2snes')
+  client_type_group.add_argument('--retroarch', dest='client_type', action='store_const', const='retroarch')
+  args = parser.parse_args()
+
+  sock = create_sock('sm_hitbox_viewer', args.client_type)
 
   screen = curses.initscr()
 
