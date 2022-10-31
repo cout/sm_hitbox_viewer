@@ -163,9 +163,6 @@ class HitboxViewer(object):
 
     for y in range(0, disp_height):
       for x in range(0, disp_width):
-        stack = 0
-        tile_x = x * tile_width - (camera_x & 0x000f)
-        tile_y = y * tile_height - (camera_x & 0x000f)
         a = (((camera_x + x * tile_width) & 0xffff) >> 4) + \
             (((((camera_y + y * tile_height) & 0x0fff) >> 4) * room_width) & 0xffff)
         bts = 0x16402 + a
