@@ -92,6 +92,11 @@ def consolidate_regions(regions, max_region_size):
       addrs.append(addr)
   return addrs_to_regions(addrs, max_region_size)
 
+disp_width = 16    # (in tiles)
+disp_height = 14   # (in tiles)
+tile_width = 16    # (in pixels)
+tile_height = 16   # (in pixels)
+
 class HitboxViewer(object):
   def __init__(self, sock, window):
     self.sock = sock
@@ -115,8 +120,8 @@ class HitboxViewer(object):
     window.erase()
     window.move(0, 0)
 
-    camera_x = (mem.short(0x0af6) - 128) & 0xffff
-    camera_y = (mem.short(0x0afa) - 112) & 0xffff
+    camera_x = (mem.short(0x0af6) - disp_width*tile_width//2) & 0xffff
+    camera_y = (mem.short(0x0afa) - disp_height*tile_height//2) & 0xffff
     if camera_x >= 10000: camera_x -= 65535
     if camera_y >= 10000: camera_y -= 65535
 
@@ -136,9 +141,9 @@ class HitboxViewer(object):
 
     if clip_mem is None: return
 
-    for y in range(0, 14):
+    for y in range(0, disp_height):
       s = ''
-      for x in range(0, 16):
+      for x in range(0, disp_width):
         clip = clips[(x, y)]
         t = clip_mem.short(clip) >> 12
         if t == 0:
@@ -156,13 +161,13 @@ class HitboxViewer(object):
   def get_clips(self, camera_x, camera_y, room_width):
     clips = { }
 
-    for y in range(0, 14):
-      for x in range(0, 16):
+    for y in range(0, disp_height):
+      for x in range(0, disp_width):
         stack = 0
-        tile_x = x * 16 - (camera_x & 0x000f)
-        tile_y = y * 16 - (camera_x & 0x000f)
-        a = (((camera_x + x * 16) & 0xffff) >> 4) + \
-            (((((camera_y + y * 16) & 0x0fff) >> 4) * room_width) & 0xffff)
+        tile_x = x * tile_width - (camera_x & 0x000f)
+        tile_y = y * tile_height - (camera_x & 0x000f)
+        a = (((camera_x + x * tile_width) & 0xffff) >> 4) + \
+            (((((camera_y + y * tile_height) & 0x0fff) >> 4) * room_width) & 0xffff)
         bts = 0x16402 + a
         clip = 0x10002 + a * 2
         clips[(x, y)] = clip
