@@ -175,10 +175,7 @@ class HitboxViewer(object):
     window.erase()
     window.move(0, 0)
 
-    state = State.read_from(self.sock)
-    state.camera_x += self.adj_x
-    state.camera_y += self.adj_y
-
+    state = self.read_state()
     self.draw_coords(state)
 
     tiles = RoomTiles.read_from(self.sock, state)
@@ -188,6 +185,12 @@ class HitboxViewer(object):
 
     s = self.get_input()
     self.handle_input(s)
+
+  def read_state(self):
+    state = State.read_from(self.sock)
+    state.camera_x += self.adj_x
+    state.camera_y += self.adj_y
+    return state
 
   def draw_coords(self, state):
     x_coord_label = "X: %d" % state.camera_x
