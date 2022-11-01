@@ -97,6 +97,53 @@ disp_height = 14   # (in tiles)
 tile_width = 16    # (in pixels)
 tile_height = 16   # (in pixels)
 
+class RoomTiles(object):
+  def __init__(self, tiles):
+    self.tiles = tiles
+
+  def __getitem__(self, coords):
+    return self.tiles[coords]
+
+  @classmethod
+  def read_from(cls, sock, camera_x, camera_y, room_width):
+    clips = cls.get_clips(camera_x, camera_y, room_width)
+    clip_mem = cls.read_clip_mem(sock, clips)
+    if clip_mem is None: return None
+
+    tiles = { }
+    for y in range(0, disp_height):
+      for x in range(0, disp_width):
+        clip = clips[(x, y)]
+        tiles[(x, y)] = clip_mem.short(clip) >> 12
+
+    return RoomTiles(tiles)
+
+  @classmethod
+  def get_clips(self, camera_x, camera_y, room_width):
+    clips = { }
+
+    for y in range(0, disp_height):
+      for x in range(0, disp_width):
+        a = (((camera_x + x * tile_width) & 0xffff) >> 4) + \
+            (((((camera_y + y * tile_height) & 0x0fff) >> 4) * room_width) & 0xffff)
+        bts = 0x16402 + a
+        clip = 0x10002 + a * 2
+        clips[(x, y)] = clip
+
+    return clips
+
+  @classmethod
+  def read_clip_mem(self, sock, clips):
+    clip_addrs = clips.values()
+    clip_regions = [ (addr, 2) for addr in clip_addrs ]
+    clip_regions = consolidate_regions(clip_regions, 0x100)
+    try:
+      # TODO: don't try to read tile memory during a transition?
+      clip_mem = SparseMemory.read_from(sock, *clip_regions)
+      return clip_mem
+    except RuntimeError: # TODO: capture specific exception that read_from raises
+      return None
+
 class HitboxViewer(object):
   def __init__(self, sock, window):
     self.sock = sock
@@ -136,16 +183,12 @@ class HitboxViewer(object):
 
     room_width = mem.short(0x07a5)
 
-    clips = self.get_clips(camera_x, camera_y, room_width)
-    clip_mem = self.read_clip_mem(clips)
-
-    if clip_mem is None: return
+    tiles = RoomTiles.read_from(self.sock, camera_x, camera_y, room_width)
 
     for y in range(0, disp_height):
       s = ''
       for x in range(0, disp_width):
-        clip = clips[(x, y)]
-        t = clip_mem.short(clip) >> 12
+        t = tiles[(x, y)]
         if t == 0:
           s += '. '
         else:
@@ -157,30 +200,6 @@ class HitboxViewer(object):
 
     s = self.get_input()
     self.handle_input(s)
-
-  def get_clips(self, camera_x, camera_y, room_width):
-    clips = { }
-
-    for y in range(0, disp_height):
-      for x in range(0, disp_width):
-        a = (((camera_x + x * tile_width) & 0xffff) >> 4) + \
-            (((((camera_y + y * tile_height) & 0x0fff) >> 4) * room_width) & 0xffff)
-        bts = 0x16402 + a
-        clip = 0x10002 + a * 2
-        clips[(x, y)] = clip
-
-    return clips
-
-  def read_clip_mem(self, clips):
-    clip_addrs = clips.values()
-    clip_regions = [ (addr, 2) for addr in clip_addrs ]
-    clip_regions = consolidate_regions(clip_regions, 0x100)
-    try:
-      # TODO: don't try to read tile memory during a transition?
-      clip_mem = SparseMemory.read_from(self.sock, *clip_regions)
-      return clip_mem
-    except RuntimeError: # TODO: capture specific exception that read_from raises
-      return None
 
   def get_input(self):
     self.window.timeout(25)
