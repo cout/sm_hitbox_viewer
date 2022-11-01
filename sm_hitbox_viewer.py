@@ -182,17 +182,7 @@ class HitboxViewer(object):
     self.draw_coords(state)
 
     tiles = RoomTiles.read_from(self.sock, state)
-
-    for y in range(0, disp_height):
-      s = ''
-      for x in range(0, disp_width):
-        t = tiles[(x, y)]
-        if t == 0:
-          s += '. '
-        else:
-          s += '%x ' % t
-      window.addstr(s)
-      window.addstr("\n")
+    self.draw_tiles(tiles)
 
     window.refresh()
 
@@ -205,6 +195,18 @@ class HitboxViewer(object):
     if self.adj_x != 0: x_coord_label += " (%+d)" % self.adj_x
     if self.adj_y != 0: y_coord_label += " (%+d)" % self.adj_y
     self.window.addstr("%s %s\n" % (x_coord_label, y_coord_label))
+
+  def draw_tiles(self, tiles):
+    for y in range(0, disp_height):
+      s = ''
+      for x in range(0, disp_width):
+        t = tiles[(x, y)]
+        if t == 0:
+          s += '. '
+        else:
+          s += '%x ' % t
+      self.window.addstr(s)
+      self.window.addstr("\n")
 
   def get_input(self):
     self.window.timeout(25)
