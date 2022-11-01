@@ -115,8 +115,8 @@ class RoomTiles(object):
     return self.tiles[coords]
 
   @classmethod
-  def read_from(cls, sock, camera_x, camera_y, room_width):
-    clips = cls.get_clips(camera_x, camera_y, room_width)
+  def read_from(cls, sock, state):
+    clips = cls.get_clips(state)
     clip_mem = cls.read_clip_mem(sock, clips)
     if clip_mem is None: return None
 
@@ -129,13 +129,13 @@ class RoomTiles(object):
     return RoomTiles(tiles)
 
   @classmethod
-  def get_clips(self, camera_x, camera_y, room_width):
+  def get_clips(cls, state):
     clips = { }
 
     for y in range(0, disp_height):
       for x in range(0, disp_width):
-        a = (((camera_x + x * tile_width) & 0xffff) >> 4) + \
-            (((((camera_y + y * tile_height) & 0x0fff) >> 4) * room_width) & 0xffff)
+        a = (((state.camera_x + x * tile_width) & 0xffff) >> 4) + \
+            (((((state.camera_y + y * tile_height) & 0x0fff) >> 4) * state.room_width) & 0xffff)
         bts = 0x16402 + a
         clip = 0x10002 + a * 2
         clips[(x, y)] = clip
@@ -176,17 +176,16 @@ class HitboxViewer(object):
     window.move(0, 0)
 
     state = State.read_from(self.sock)
-    camera_x = state.camera_x + self.adj_x
-    camera_y = state.camera_y = self.adj_y
-    room_width = state.room_width
+    state.camera_x += self.adj_x
+    state.camera_y += self.adj_y
 
-    x_coord_label = "X: %d" % camera_x
-    y_coord_label = "Y: %d" % camera_y
+    x_coord_label = "X: %d" % state.camera_x
+    y_coord_label = "Y: %d" % state.camera_y
     if self.adj_x != 0: x_coord_label += " (%+d)" % self.adj_x
     if self.adj_y != 0: y_coord_label += " (%+d)" % self.adj_y
     window.addstr("%s %s\n" % (x_coord_label, y_coord_label))
 
-    tiles = RoomTiles.read_from(self.sock, camera_x, camera_y, room_width)
+    tiles = RoomTiles.read_from(self.sock, state)
 
     for y in range(0, disp_height):
       s = ''
