@@ -42,25 +42,6 @@ import time
 import curses
 import argparse
 
-addresses = [
-    (0x0000, 0x100),
-    (0x0100, 0x100),
-    (0x0200, 0x100),
-    (0x0300, 0x100),
-    (0x0400, 0x100),
-    (0x0500, 0x100),
-    (0x0600, 0x100),
-    (0x0700, 0x100),
-    (0x0800, 0x100),
-    (0x0900, 0x100),
-    (0x0a00, 0x100),
-    (0x0b00, 0x100),
-    (0x0c00, 0x100),
-    (0x0d00, 0x100),
-    (0x0e00, 0x100),
-    (0x0f00, 0x100),
-]
-
 def addrs_to_regions(addrs, max_region_size):
   regions = [ ]
   addrs = sorted(addrs)
@@ -96,6 +77,35 @@ disp_width = 16    # (in tiles)
 disp_height = 14   # (in tiles)
 tile_width = 16    # (in pixels)
 tile_height = 16   # (in pixels)
+
+class State(object):
+  def __init__(self, **attrs):
+    for name in attrs:
+      setattr(self, name, attrs[name])
+
+  def __repr__(self):
+    return "State(%s)" % ', '.join([ '%s=%s' % (k,repr(v)) for k,v in
+      self.__dict__.items() ])
+
+  @staticmethod
+  def read_from(sock):
+    mem = SparseMemory.read_from(
+        sock,
+        (0x07a5, 0x2),
+        (0x0af6, 0x6),
+    )
+
+    camera_x = (mem.short(0x0af6) - disp_width*tile_width//2) & 0xffff
+    camera_y = (mem.short(0x0afa) - disp_height*tile_height//2) & 0xffff
+    if camera_x >= 10000: camera_x -= 65535
+    if camera_y >= 10000: camera_y -= 65535
+
+    room_width = mem.short(0x07a5)
+
+    return State(
+        camera_x=camera_x,
+        camera_y=camera_y,
+        room_width=room_width)
 
 class RoomTiles(object):
   def __init__(self, tiles):
@@ -162,26 +172,19 @@ class HitboxViewer(object):
     sock = self.sock
     window = self.window
 
-    mem = SparseMemory.read_from(sock, *addresses)
-
     window.erase()
     window.move(0, 0)
 
-    camera_x = (mem.short(0x0af6) - disp_width*tile_width//2) & 0xffff
-    camera_y = (mem.short(0x0afa) - disp_height*tile_height//2) & 0xffff
-    if camera_x >= 10000: camera_x -= 65535
-    if camera_y >= 10000: camera_y -= 65535
-
-    camera_x += self.adj_x
-    camera_y += self.adj_y
+    state = State.read_from(self.sock)
+    camera_x = state.camera_x + self.adj_x
+    camera_y = state.camera_y = self.adj_y
+    room_width = state.room_width
 
     x_coord_label = "X: %d" % camera_x
     y_coord_label = "Y: %d" % camera_y
     if self.adj_x != 0: x_coord_label += " (%+d)" % self.adj_x
     if self.adj_y != 0: y_coord_label += " (%+d)" % self.adj_y
     window.addstr("%s %s\n" % (x_coord_label, y_coord_label))
-
-    room_width = mem.short(0x07a5)
 
     tiles = RoomTiles.read_from(self.sock, camera_x, camera_y, room_width)
 
