@@ -134,8 +134,8 @@ class RoomTiles(object):
 
     for y in range(0, disp_height):
       for x in range(0, disp_width):
-        a = (((state.camera_x + x * tile_width) & 0xffff) >> 4) + \
-            (((((state.camera_y + y * tile_height) & 0x0fff) >> 4) * state.room_width) & 0xffff)
+        a = (((state.camera_x + x * tile_width) & 0xffff) // tile_width) + \
+            (((((state.camera_y + y * tile_height) & 0x0fff) // tile_height) * state.room_width) & 0xffff)
         bts = 0x16402 + a
         clip = 0x10002 + a * 2
         clips[(x, y)] = clip
